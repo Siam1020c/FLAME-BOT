@@ -1,19 +1,22 @@
-moment = require('moment-timezone');
+const fs = require('fs');
+const moment = require('moment-timezone');
+const NepaliDate = require('nepali-date');
+const fast = require('fast-speedtest-api');
 
 module.exports = {
   config: {
     name: "info",
-    version: "1.0",
-    author: "Rahman Leon",
+    version: "1.3",
+    author: "AceGun",
+    countDown: 5,
     role: 0,
-    cooldown: 5,
     shortDescription: {
       vi: "",
-      en: "Sends information about the bot and admin."
+      en: "Sends information about the bot and admin along with an image."
     },
     longDescription: {
       vi: "",
-      en: "Sends information about the bot and admin."
+      en: "Sends information about the bot and admin along with an image."
     },
     category: "utility",
     guide: {
@@ -22,41 +25,86 @@ module.exports = {
     envConfig: {}
   },
 
-  onStart: async function ({ message, prefix }) {
-    const botPrefix = prefix; // Use the provided bot prefix
-    const authorName = "TK Joel 💪🏾";
-    const authorFB = "https://www.facebook.com/profile.php?id=100079402482429";
+  onStart: async function ({ message, api, event }) {
+    const speedTest = new fast({
+        token: "YXNkZmFzZGxmbnNkYWZoYXNkZmhrYWxm",
+        verbose: false,
+        timeout: 10000,
+        https: true,
+        urlCount: 5,
+        bufferSize: 8,
+        unit: fast.UNITS.Mbps
+      });
+    const result = await speedTest.getSpeed();
+    const botName = "FLAME-BOT";
+    const botPrefix = "(.)";
+    const authorName = "MD Abdur Rahman Siam";
+    const authorFB = "FB.Me/100044530383890";
+    const authorInsta = "Ssiyam69";
+    const authorTele = "SIAM_039";
+    const authorTwi = "Ssiyam69";
+    const status = "Single";
+    const timeStart = Date.now();
 
-    const now = moment();
+    const urls = JSON.parse(fs.readFileSync('siam.json'));
+    const link = urls[Math.floor(Math.random() * urls.length)];
+
+    // Get current date and time in Asia/Kathmandu timezone
+    const now = moment().tz('Asia/Dhaka');
     const date = now.format('MMMM Do YYYY');
     const time = now.format('h:mm:ss A');
 
+    // Get Nepali date
+    const nepaliDate = new NepaliDate(now.toDate());
+    const bsDateStr = nepaliDate.format("dddd, DD MMMM");
+
+    // Calculate bot uptime
     const uptime = process.uptime();
-    const seconds = Math.floor(uptime % 60);
-    const minutes = Math.floor((uptime / 60) % 60);
-    const hours = Math.floor((uptime / (60 * 60)) % 24);
-    const days = Math.floor(uptime / (60 * 60 * 24));
-    const uptimeString = `${days} days ${hours} hours ${minutes} minutes ${seconds} seconds`;
+    const uptimeString = formatUptime(uptime);
 
-    const additionalText = "Thank TK Joel👊 to provide FB account!! 🙏";
+    const ping = Date.now() - timeStart;
 
-    // Combine the bot information and additional text in a single message
-    message.reply(`
-      ℹ Bot Information:
-      ⏩ Bot Prefix: ${botPrefix}
-      👤 Owner: ${authorName}
-      🔗 Facebook: [${authorName}](${authorFB})
-      📅 Date: ${date}
-      🕒 Time: ${time}
-      ⏰ Uptime: ${uptimeString}
-      
-      ${additionalText}
-    `);
+    const replyMessage = `===「 Bot & Owner Info 」===
+❏ Bot Name: ${botName}
+❏ Bot Prefix: ${botPrefix}
+❏ Author Name: ${authorName}
+❏ FB: ${authorFB}
+❏ Instagram: ${authorInsta}
+❏ Twitter: ${authorTwi}
+❏ Telegram: ${authorTele}
+❏ Status: ${status}
+❏ Date: ${date}
+❏ BS Date: ${bsDateStr}
+❏ Time: ${time}
+❏ Bot Running: ${uptimeString}
+❏ Bot's Speed: ${result} MBPS
+=====================`;
+
+    const attachment = await global.utils.getStreamFromURL(link);
+    message.reply({
+      body: replyMessage,
+      attachment
+    });
   },
 
-  onChat: async function ({ event, message, getLang, prefix }) {
+  onChat: async function({ event, message, getLang }) {
     if (event.body && event.body.toLowerCase() === "info") {
-      this.onStart({ message, prefix });
+      await this.onStart({ message });
     }
   }
 };
+
+function formatUptime(uptime) {
+  const seconds = Math.floor(uptime % 60);
+  const minutes = Math.floor((uptime / 60) % 60);
+  const hours = Math.floor((uptime / (60 * 60)) % 24);
+  const days = Math.floor(uptime / (60 * 60 * 24));
+
+  const uptimeString = [];
+  if (days > 0) uptimeString.push(`${days}d`);
+  if (hours > 0) uptimeString.push(`${hours}h`);
+  if (minutes > 0) uptimeString.push(`${minutes}min`);
+  if (seconds > 0) uptimeString.push(`${seconds}sec`);
+
+  return uptimeString.join(" ");
+}
